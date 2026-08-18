@@ -16,6 +16,8 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
 
+import { GoogleLoginDto } from './dto/google-login.dto';
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -36,12 +38,18 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('google')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Log in or register using Google token or profile data' })
+  @ApiResponse({ status: 200, description: 'Google login successful' })
+  googleLogin(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLoginWithToken(dto);
+  }
+
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Initiate Google OAuth2 Login' })
-  async googleAuth() {
-    
-  }
+  async googleAuth() {}
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
