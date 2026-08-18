@@ -10,6 +10,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
+import { OAuth2Client } from 'google-auth-library';
+import { GoogleLoginDto } from './dto/google-login.dto';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -83,7 +86,7 @@ export class AuthService {
     });
 
     if (!user) {
-      // Create username from email prefix
+
       const baseUsername = googleUser.email.split('@')[0];
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const username = `${baseUsername}_${randomSuffix}`;
@@ -106,6 +109,71 @@ export class AuthService {
     const token = this.generateToken(user.id, user.email);
 
     delete user.passwordHash;
+    return {
+      user,
+      accessToken: token,
+    };
+  }
+
+  async googleLoginWithToken(dto: GoogleLoginDto) {
+    let email = dto.email;
+    let googleId = dto.googleId;
+    let avatarUrl = dto.avatarUrl;
+    let username = dto.username;
+
+    if (dto.idToken) {
+      try {
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+          idToken: dto.idToken,
+        });
+        const payload = ticket.getPayload();
+        if (payload) {
+          email = payload.email || email;
+          googleId = payload.sub || googleId;
+          avatarUrl = payload.picture || avatarUrl;
+        }
+      } catch (err) {
+
+      }
+    }
+
+    if (!email) {
+      throw new BadRequestException('Email is required for Google login');
+    }
+
+    let user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          ...(googleId ? [{ googleId }] : []),
+        ],
+      },
+    });
+
+    if (!user) {
+      const baseUsername = username || email.split('@')[0];
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const finalUsername = `${baseUsername.replace(/[^a-zA-Z0-9_]/g, '')}_${randomSuffix}`;
+
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          username: finalUsername,
+          googleId,
+          avatarUrl,
+        },
+      });
+    } else if (googleId && !user.googleId) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { googleId },
+      });
+    }
+
+    const token = this.generateToken(user.id, user.email);
+    delete user.passwordHash;
+
     return {
       user,
       accessToken: token,
