@@ -1,0 +1,41 @@
+name: media_social_app
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: media_social_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: media_social_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: media_social_api
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/media_social_db?schema=public"
+      JWT_SECRET: "media_social_super_secret_jwt_key_2026"
+      JWT_EXPIRATION: "7d"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-google_client_id_placeholder}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-google_client_secret_placeholder}
+      GOOGLE_CALLBACK_URL: http://localhost:3000/api/auth/google/callback
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-demo}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-1234567890}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-cloudinary_secret_placeholder}
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:

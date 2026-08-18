@@ -8,6 +8,11 @@ import { FollowsModule } from './follows/follows.module';
 import { PostsModule } from './posts/posts.module';
 import { LikesModule } from './likes/likes.module';
 import { CommentsModule } from './comments/comments.module';
+import { BlocksModule } from './blocks/blocks.module';
+import { EventsModule } from './events/events.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { StoriesModule } from './stories/stories.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -22,6 +27,11 @@ import { CommentsModule } from './comments/comments.module';
     PostsModule,
     LikesModule,
     CommentsModule,
+    BlocksModule,
+    EventsModule,
+    NotificationsModule,
+    StoriesModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

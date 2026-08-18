@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -19,13 +20,35 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  posts        Post[]
-  likes        Like[]
-  comments     Comment[]
-  followers    Follow[]  @relation("following")
-  following    Follow[]  @relation("follower")
+  posts                  Post[]
+  likes                  Like[]
+  comments               Comment[]
+  followers              Follow[]         @relation("following")
+  following              Follow[]         @relation("follower")
+  blocked                Block[]          @relation("blocked")
+  blocker                Block[]          @relation("blocker")
+  stories                Story[]
+  storyViews             StoryView[]
+  user1Conversations     Conversation[]   @relation("user1Conversations")
+  user2Conversations     Conversation[]   @relation("user2Conversations")
+  sentMessages           Message[]
+  receivedNotifications  Notification[]   @relation("receivedNotifications")
+  triggeredNotifications Notification[]   @relation("triggeredNotifications")
 
   @@map("users")
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
 }
 
 model Follow {
@@ -104,4 +127,86 @@ model Comment {
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   @@map("comments")
+}
+
+model Story {
+  id        String      @id @default(uuid())
+  userId    String
+  mediaUrl  String
+  mediaType MediaType   @default(IMAGE)
+  caption   String?
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  views     StoryView[]
+
+  @@map("stories")
+}
+
+model StoryView {
+  id        String   @id @default(uuid())
+  storyId   String
+  viewerId  String
+  viewedAt  DateTime @default(now())
+
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer    User     @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId])
+  @@map("story_views")
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user1     User      @relation("user1Conversations", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User      @relation("user2Conversations", fields: [user2Id], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@unique([user1Id, user2Id])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  mediaUrl       String?
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  actorId   String
+  type      NotificationType
+  entityId  String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user      User             @relation("receivedNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User             @relation("triggeredNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW_REQUEST
+  FOLLOW_ACCEPT
+  STORY_VIEW
+  NEW_MESSAGE
 }

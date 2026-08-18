@@ -7,7 +7,6 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -45,6 +44,15 @@ async function bootstrap() {
       'bearer',
     )
     .addTag('Auth', 'User authentication and Google OAuth2')
+    .addTag('Users', 'User accounts, profile management & search')
+    .addTag('Follows', 'Subscription management and follow request approvals')
+    .addTag('Posts', 'Media posts creation, activity feed, and viewing')
+    .addTag('Likes', 'Post likes management')
+    .addTag('Comments', 'Post comments management')
+    .addTag('Blocks', 'Blocks management')
+    .addTag('Stories', '24-hour media stories and view tracking')
+    .addTag('Chat', 'Direct messaging and real-time chat conversations')
+    .addTag('Notifications', 'In-app and real-time WebSockets notifications')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
